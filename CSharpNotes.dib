@@ -1,0 +1,163 @@
+#!markdown
+
+# C# and .NET Stuff in General
+
+#!markdown
+
+### Generics
+Allows for placeholder types to make code more generalized.
+E.g, a datastore class for maintaining data of arbitrary types "T_a" and "T_b"
+
+#!csharp
+
+class DataStore<T_a, T_b>{
+	public T_a AKeyMaybe {get; set;}
+	public T_b PerhapsAValue {get; set;}
+}
+DataStore<int, string> StoreStringsKeyedWithInt = new DataStore<int, string>(){
+    AKeyMaybe = 1,
+    PerhapsAValue = "Hello"
+};
+DataStore<string, int> StoreIntsKeyedWithString = new DataStore<string, int>()
+{
+    AKeyMaybe = "Hello",
+    PerhapsAValue = 1
+};
+DataStore<string, string> StoreStringsKeyedWithString = new DataStore<string, string>()
+{
+    AKeyMaybe = "Hello",
+    PerhapsAValue = "World"
+};
+
+#!markdown
+
+### Nullable Types
+
+By default, the compiler thinks you don't want null variables; if they are given a value of null, then the compiler will throw an error for value types (such as ints) or a warning for reference types (such as strings). This is to prevent you from accidently accessing a null reference.
+
+If it's sensible for a variable to have a value of null, which requires some descision making as to its purpose and what it represents, you can declare it nullable.
+The question-mark syntax is from the type theory notation for the Option type, which it is related to.
+https://en.wikipedia.org/wiki/Option_type#Theoretical_aspects.
+
+(Three lines in the following code will throw errors; comment them to run the code)
+
+#!csharp
+
+// Enable nullable vs nonnullable reference stuff. Enabled by default in new projects created by dotnet. 
+// Otherwise references are implicitly nullable. Required if you want some nullable and some nonnullable.
+#nullable enable
+
+//=========== Value types ===========//
+int intNonNullableByDefault = null; // Error CS0037  Cannot convert null to 'int' because it is a non-nullable value type
+int? intQuestionMarkMeansNullable = null; // Compiler won't complain.
+
+//=========== Reference types ===========//
+string stringNnonNullableByDefault = null; // Warning CS8600  Converting null literal or possible null value to non-nullable type.
+string? stringQuestionMarkMeansNullable = null; // Compiler won't complain.
+
+// You can still crash if you try to access a null reference.
+Console.Write(stringQuestionMarkMeansNullable.Length); // Warning CS8602  Dereference of a possibly null reference.
+
+// You can use the null-conditional operator to only access the property if the reference is not null. Otherwise, it will return null and write nothing without crashing.
+Console.Write(stringQuestionMarkMeansNullable?.Length);
+
+// You can use ! to shut up the compiler if you know what you're doing. It means "pretend this is not null" basically.
+Console.Write(stringQuestionMarkMeansNullable!.Length); // Or maybe you don't know what you're doing.
+
+// use ?? to provide an alternate value if the reference is null.
+Console.Write(stringQuestionMarkMeansNullable?.Length ?? 1337); 
+
+#!markdown
+
+### Expression Member
+
+This is just to simplify code. You can concisely define a property of a class as a function using arrow syntax.
+
+#!csharp
+
+//Class that contains a list of ints
+class ClassWithList
+{
+    // Define ClassWithEnumerable.Count as a function that calls Ints.Count() using arrow syntax.
+    public int Count() => Ints.Count();
+
+    public List<int> Ints {get; set;}
+}
+
+// Create a new instance of ClassWithEnumerable. Use "var" for the type and let the compiler figure it out based on the right side.
+var objectWithList = new ClassWithList(){
+    Ints = new List<int>(){1,2,3,4,5}
+};
+
+Console.WriteLine(objectWithList.Count()); // 5
+
+#!markdown
+
+### Interfaces
+
+An interface describes the criteria (signature) for a hypothetical class. Any class with the same return type and parameters can be said to "implement" the interface.
+
+This can be used to describe the form and function of a program without the details being implemented. In this case the interface is a "contract".
+
+Note that a class can implement multiple interfaces.
+
+#!csharp
+
+//Interface that encapulates a data file and prints entries as a list.
+interface IDataFileReader{
+
+    // States that an implementation of this interface must have a FileName property that is a string.
+    string FileName { get; set; }
+
+    // States that an implementation of this interface must have a Read() method that returns a list of strings.
+    // How exactly it does that is up to the implementation.
+    List<string> Read();
+}
+
+// Class that implements the IDataFileReader interface.
+class DataFileReader : IDataFileReader{
+    // The name of the file.
+    public string FileName { get; set; }
+
+    // The Read() method that returns a list of strings.
+    public List<string> Read(){
+
+        // Read the file and return the lines as a list of strings.
+        var File = new System.IO.StreamReader(FileName);
+        return File.ReadToEnd().Split('\n').ToList();
+    }
+}
+
+// Create a new instance of DataFileReader that opens "test.txt"
+DataFileReader reader = new DataFileReader(){
+    FileName = "test.txt"
+};
+
+// Read the file and print the lines.
+foreach(string line in reader.Read()){
+    Console.WriteLine(line);
+}
+
+#!markdown
+
+Interfaces can also be used to generalize code by, instead of requiring a specific class, you can allow any class that implements and interface.
+
+#!csharp
+
+//Class that contains an enumerable of ints
+class ClassWithEnumerable
+{
+
+    // the IEnumerable means we can use any type that implements IEnumerable<int> here. E.g. List<int>, int[], etc. Anything you can iterate over and count.
+    public IEnumerable<int> Ints { get; set; }
+}
+
+// Create a new instance that uses a List<int> for Ints.
+ClassWithEnumerable objectWithList = new ClassWithEnumerable(){
+    Ints = new List<int>(){1,2,3,4,5}
+};
+
+// Create a new instance that uses an array for Ints.
+ClassWithEnumerable objectWithArray = new ClassWithEnumerable(){
+    Ints = new int[]{1,2,3,4,5}
+};
